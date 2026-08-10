@@ -101,9 +101,12 @@ local function CacheMacroSegment(segment, key, modifierPrefix)
     local spellName = CleanMacroSpellName(segment)
     if spellName == "" then return end
 
+    modifierPrefix = modifierPrefix or GetMacroModifierPrefix(segment)
+    local shortenedKey = ShortenKey(modifierPrefix .. key)
+    StoreShortest(keybindsBySpellName, spellName, shortenedKey)
+
     local spellInfo = C_Spell.GetSpellInfo(spellName)
     if spellInfo and spellInfo.spellID then
-        modifierPrefix = modifierPrefix or GetMacroModifierPrefix(segment)
         CacheSpellKey(spellInfo.spellID, modifierPrefix .. key)
     end
 end
