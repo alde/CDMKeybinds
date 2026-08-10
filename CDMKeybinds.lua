@@ -358,6 +358,54 @@ local function GetKeybindForSpell(spellID)
     return spellInfo and keybindsBySpellName[spellInfo.name] or nil
 end
 
+local function FormatMacroBody(macroID)
+    local body = GetMacroBody(macroID)
+    if not body then return "<nil>" end
+    if IsSecret(body) then return "<secret>" end
+    return body:gsub("[\n\r]+", " | ")
+end
+
+local function DebugActionBarMacros()
+    print("CDMKeybinds: bound action-bar macros")
+    for _, bar in ipairs(ACTION_BAR_BINDINGS) do
+        for buttonIndex = 1, BUTTONS_PER_BAR do
+            local bindingName = bar.prefix .. buttonIndex
+            local keys = { GetBindingKey(bindingName) }
+            local actionSlot = GetActionSlot(bar, buttonIndex)
+            local actionType, id = GetActionInfo(actionSlot)
+            if #keys > 0 and actionType == "macro" then
+                print(bindingName, actionSlot, table.concat(keys, ","), id,
+                    FormatMacroBody(id))
+            end
+        end
+    end
+end
+
+local function DebugViewerSpells()
+    print("CDMKeybinds: cooldown viewer spells")
+    for _, viewerName in ipairs(VIEWER_NAMES) do
+        local viewer = _G[viewerName]
+        if viewer and viewer.GetItemFrames then
+            for _, itemFrame in ipairs(viewer:GetItemFrames()) do
+                local spellID = itemFrame.GetSpellID and itemFrame:GetSpellID()
+                if spellID and not IsSecret(spellID) then
+                    local spellInfo = C_Spell.GetSpellInfo(spellID)
+                    local spellName = spellInfo and spellInfo.name or "<unknown>"
+                    print(viewerName, spellID, spellName,
+                        GetKeybindForSpell(spellID) or "<none>")
+                end
+            end
+        end
+    end
+end
+
+
+local function DebugKeybindings()
+    cacheIsDirty = true
+    DebugActionBarMacros()
+    DebugViewerSpells()
+end
+
 local function GetKeybindText(itemFrame)
     local text = keybindTextByItem[itemFrame]
     if text then return text end
@@ -504,6 +552,7 @@ end)
 CDMKeybinds.GetKeybindForSpell = GetKeybindForSpell
 CDMKeybinds.GetKeybindings = GetKeybindings
 CDMKeybinds.RegisterKeybindingProvider = RegisterKeybindingProvider
+CDMKeybinds.DebugKeybindings = DebugKeybindings
 CDMKeybinds.name = addonName
 
 RegisterSlashCommand()
