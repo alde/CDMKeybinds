@@ -26,7 +26,10 @@ CreateFrame = function()
     }
 end
 GetActionInfo = function(actionSlot)
-    if actionSlot == 1 then return "macro", 1 end
+    if actionSlot == 1 then return "macro", 116680 end
+end
+GetActionText = function(actionSlot)
+    if actionSlot == 1 then return "Tea Macro" end
 end
 GetBindingKey = function(bindingName)
     if bindingName == "ACTIONBUTTON1" then return "SHIFT-F" end
@@ -44,7 +47,9 @@ GetBinding = function(bindingIndex)
     end
     return "CLICK BindPadKey:MACRO Tea Macro", "BindPad", "ALT-Q"
 end
-GetMacroBody = function() return macroBody end
+GetMacroBody = function(macroID)
+    if macroID == 1 then return macroBody end
+end
 GetMacroSpell = function() return nil end
 GetMacroIndexByName = function(name)
     return name == "Tea Macro" and 1 or 0
@@ -145,7 +150,7 @@ assert(duplicateCount == 1, "expected duplicate binding to be removed")
 
 assert(addon.GetKeybindForSpell(101643) == "s-X", "expected BindPad spell binding")
 assert(addon.GetKeybindForSpell(119996) == "X", "expected BindPad macro binding")
-assert(addon.GetKeybindForSpell(116680) == "Q", "expected Clique spell binding")
+assert(addon.GetKeybindForSpell(116680) == "s-F", "expected action-bar macro binding")
 assert(addon.GetKeybindForSpell(115310) == "a-R", "expected Clique macro binding")
 assert(type(cliqueHandler) == "function", "expected Clique refresh hook")
 assert(type(bindPadHandler) == "function", "expected BindPad refresh hook")

@@ -183,17 +183,42 @@ local function CacheKeybinding(keybinding)
     end
 end
 
+local function GetMacroID(name)
+    if not name or not GetMacroIndexByName then return nil end
+    local macroID = GetMacroIndexByName(name)
+    return macroID and macroID > INVALID_MACRO_ID and macroID or nil
+end
+
+local function ResolveActionBarMacro(actionSlot, actionID)
+    if GetMacroBody(actionID) then
+        return actionID, GetMacroSpell(actionID)
+    end
+    return GetMacroID(GetActionText(actionSlot)), actionID
+end
+
+local function AddButtonKeybinding(keybindings, actionType, id, key)
+    if not id then return end
+    keybindings[#keybindings + 1] = {
+        actionType = actionType,
+        id = id,
+        key = key,
+    }
+end
+
 local function GetButtonKeybindings(bar, buttonIndex)
     local keybindings = {}
     local bindingName = bar.prefix .. buttonIndex
     local keys = { GetBindingKey(bindingName) }
-    local actionType, id = GetActionInfo(GetActionSlot(bar, buttonIndex))
+    local actionSlot = GetActionSlot(bar, buttonIndex)
+    local actionType, id = GetActionInfo(actionSlot)
     for _, key in ipairs(keys) do
-        keybindings[#keybindings + 1] = {
-            actionType = actionType,
-            id = id,
-            key = key,
-        }
+        if actionType == "macro" then
+            local macroID, spellID = ResolveActionBarMacro(actionSlot, id)
+            AddButtonKeybinding(keybindings, "macro", macroID, key)
+            AddButtonKeybinding(keybindings, "spell", spellID, key)
+        else
+            AddButtonKeybinding(keybindings, actionType, id, key)
+        end
     end
     return keybindings
 end
@@ -208,12 +233,6 @@ local function GetActionBarKeybindings()
         end
     end
     return keybindings
-end
-
-local function GetMacroID(name)
-    if not GetMacroIndexByName then return nil end
-    local macroID = GetMacroIndexByName(name)
-    return macroID and macroID > INVALID_MACRO_ID and macroID or nil
 end
 
 local function NewKeybinding(actionType, id, key)
@@ -359,6 +378,7 @@ local function GetKeybindForSpell(spellID)
 end
 
 local function FormatMacroBody(macroID)
+    if not macroID then return "<nil>" end
     local body = GetMacroBody(macroID)
     if not body then return "<nil>" end
     if IsSecret(body) then return "<secret>" end
@@ -374,8 +394,9 @@ local function DebugActionBarMacros()
             local actionSlot = GetActionSlot(bar, buttonIndex)
             local actionType, id = GetActionInfo(actionSlot)
             if #keys > 0 and actionType == "macro" then
-                print(bindingName, actionSlot, table.concat(keys, ","), id,
-                    FormatMacroBody(id))
+                local macroID = ResolveActionBarMacro(actionSlot, id)
+                print(bindingName, actionSlot, table.concat(keys, ","),
+                    "action", id, "macro", macroID, FormatMacroBody(macroID))
             end
         end
     end
