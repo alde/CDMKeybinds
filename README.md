@@ -3,9 +3,10 @@
 CDMKeybinds shows action bar keybinds on Blizzard's Essential and Utility
 Cooldown Manager icons.
 
-It resolves direct spell bindings and spells used through `/cast`, `/use`, and
-`/castsequence` macros. Modifier conditions are included in the displayed
-binding, using compact prefixes such as `s-`, `c-`, and `a-`.
+It resolves action-bar, BindPad, and Clique bindings. Spells used through
+`/cast`, `/use`, and `/castsequence` macros are supported. Modifier conditions
+are included in the displayed binding, using compact prefixes such as `s-`,
+`c-`, and `a-`.
 
 ## Installation
 
@@ -32,5 +33,5 @@ Keybinds are shown on the Essential and Utility cooldown viewers. Buff icons
 and buff bars are not altered because they represent aura state rather than
 castable cooldown buttons.
 
-The add-on uses Blizzard action bar bindings. It has no settings or saved
-variables.
+Clique and BindPad integration is automatic when either add-on is installed.
+CDMKeybinds has no settings or saved variables.
