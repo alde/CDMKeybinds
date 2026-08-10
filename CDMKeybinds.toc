@@ -1,6 +1,6 @@
 ## Interface: 120007
 ## Title: CDMKeybinds
-## Version: 1.0.0
+## Version: 1
 ## Notes: Shows action bar keybinds on Blizzard's Cooldown Manager
 ## Author: Rickard Dybeck
 ## Category: Combat
