@@ -48,6 +48,7 @@ local cacheIsDirty = true
 local updatePending = false
 local cliqueIsHooked = false
 local bindPadIsHooked = false
+local bindPadIsReady = false
 
 local function IsSecret(value)
     return issecretvalue and issecretvalue(value)
@@ -264,7 +265,7 @@ end
 
 local function GetBindPadKeybindings()
     local keybindings = {}
-    if not BindPadCore or not BindPadCore.AllSlotInfoIter then return keybindings end
+    if not bindPadIsReady or not BindPadCore.AllSlotInfoIter then return keybindings end
 
     for slot in BindPadCore.AllSlotInfoIter() do
         local keys = { GetBindingKey(slot.action) }
@@ -420,12 +421,21 @@ local function HookClique()
 end
 
 local function HookBindPad()
-    if bindPadIsHooked or not BindPadCore or not BindPadCore.UpdateMacroText then
+    if bindPadIsHooked or not BindPadCore
+        or not BindPadCore.UpdateMacroText
+        or not BindPadCore.InitBindPadOnce then
         return
     end
     hooksecurefunc(BindPadCore, "UpdateMacroText", InvalidateAndUpdate)
+    hooksecurefunc(BindPadCore, "InitBindPadOnce", function()
+        bindPadIsReady = true
+        InvalidateAndUpdate()
+    end)
     bindPadIsHooked = true
-    InvalidateAndUpdate()
+    if BindPadCore.initialized and BindPadCore.character then
+        bindPadIsReady = true
+        InvalidateAndUpdate()
+    end
 end
 
 local function HookBindingAddons()
