@@ -5,6 +5,8 @@ local macroBody = [[
 ]]
 
 local function Noop() end
+local eventHandler
+local settingsByID = {}
 
 _G = _G or _ENV
 C_Spell = {
@@ -13,6 +15,7 @@ C_Spell = {
             [100780] = { name = "Tiger Palm", spellID = 100780 },
             [101643] = { name = "Transcendence", spellID = 101643 },
             [115310] = { name = "Revival", spellID = 115310 },
+            [116841] = { name = "Tiger's Lust", spellID = 116841 },
             [116680] = { name = "Thunder Focus Tea", spellID = 116680 },
             [119996] = { name = "Transcendence: Transfer", spellID = 119996 },
         }
@@ -22,7 +25,9 @@ C_Spell = {
 CreateFrame = function()
     return {
         RegisterEvent = Noop,
-        SetScript = Noop,
+        SetScript = function(_, script, handler)
+            if script == "OnEvent" then eventHandler = handler end
+        end,
     }
 end
 GetActionInfo = function(actionSlot)
@@ -56,6 +61,41 @@ GetMacroIndexByName = function(name)
 end
 InCombatLockdown = function() return false end
 SlashCmdList = {}
+Settings = {
+    VarType = { String = "string", Boolean = "boolean" },
+    RegisterVerticalLayoutCategory = function(name) return { name = name } end,
+    RegisterProxySetting = function(_, id, _, _, _, getter, setter)
+        local setting = { getter = getter, setter = setter }
+        settingsByID[id] = setting
+        return setting
+    end,
+    CreateControlTextContainer = function()
+        local container = { data = {} }
+        function container:Add(value, label)
+            self.data[#self.data + 1] = { value = value, label = label }
+        end
+        function container:GetData() return self.data end
+        return container
+    end,
+    CreateDropdown = function(_, setting, getOptions)
+        setting.getOptions = getOptions
+    end,
+    CreateCheckbox = Noop,
+    RegisterAddOnCategory = Noop,
+}
+LibStub = function(libraryName)
+    if libraryName ~= "LibSharedMedia-3.0" then return end
+    return {
+        Fetch = function(_, mediaType, fontName)
+            if mediaType == "font" and fontName == "Test Font" then
+                return "Fonts\\TEST.TTF"
+            end
+        end,
+        List = function()
+            return { "Friz Quadrata TT", "Test Font" }
+        end,
+    }
+end
 wipe = function(tableToWipe)
     for key in pairs(tableToWipe) do tableToWipe[key] = nil end
 end
@@ -124,6 +164,14 @@ Clique = {
 local addon = {}
 assert(loadfile("CDMKeybinds.lua"))("CDMKeybinds", addon)
 assert(_G.CDMKeybinds == addon, "expected globally accessible add-on API")
+eventHandler(nil, "ADDON_LOADED", "CDMKeybinds")
+
+local fontSetting = settingsByID.CDMKEYBINDS_FONT
+local unicodeSetting = settingsByID.CDMKEYBINDS_UNICODE_ARROWS
+assert(fontSetting and unicodeSetting, "expected add-on settings to be registered")
+assert(#fontSetting.getOptions() == 2, "expected SharedMedia font options")
+fontSetting.setter("Test Font")
+assert(CDMKeybindsDB.font == "Test Font", "expected selected font to be saved")
 
 addon.GetKeybindings()
 assert(bindPadIteratorCalls == 0, "expected uninitialised BindPad to be skipped")
@@ -158,9 +206,17 @@ assert(type(bindPadHandler) == "function", "expected BindPad refresh hook")
 Clique.bindings = {
     { type = "spell", spell = "Tiger Palm", key = "MOUSEWHEELUP" },
     { type = "spell", spell = "Revival", key = "MOUSEWHEELDOWN" },
+    { type = "spell", spell = "Tiger's Lust", key = "SHIFT-MOUSEWHEELUP" },
 }
 cliqueHandler()
 assert(addon.GetKeybindForSpell(100780) == "mwu", "expected wheel-up shortening")
 assert(addon.GetKeybindForSpell(115310) == "mwd", "expected wheel-down shortening")
+assert(addon.GetKeybindForSpell(116841) == "s-mwu", "expected modified wheel shortening")
+
+unicodeSetting.setter(true)
+cliqueHandler()
+assert(addon.GetKeybindForSpell(100780) == "m↑", "expected Unicode wheel-up shortening")
+assert(addon.GetKeybindForSpell(115310) == "m↓", "expected Unicode wheel-down shortening")
+assert(addon.GetKeybindForSpell(116841) == "s-m↑", "expected modified Unicode wheel shortening")
 
 print("keybinding tests: pass")

@@ -1,11 +1,19 @@
 local addonName, CDMKeybinds = ...
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
+local DEFAULT_FONT_NAME = "Friz Quadrata TT"
+local DEFAULT_FONT_PATH = "Fonts\\FRIZQT__.TTF"
 local FONT_SIZE = 12
 local BUTTONS_PER_BAR = 12
 local FIRST_BINDING_KEY_INDEX = 3
 local INVALID_MACRO_ID = 0
 local KEYBINDING_ID_SEPARATOR = "\31"
+local FONT_SETTING_ID = "CDMKEYBINDS_FONT"
+local UNICODE_SETTING_ID = "CDMKEYBINDS_UNICODE_ARROWS"
+
+CDMKeybindsDB = CDMKeybindsDB or {}
+local config = CDMKeybindsDB
+if config.font == nil then config.font = DEFAULT_FONT_NAME end
+if config.useUnicodeArrows == nil then config.useUnicodeArrows = false end
 
 local VIEWER_NAMES = {
     "EssentialCooldownViewer",
@@ -35,6 +43,11 @@ local KEY_SHORTENINGS = {
     { pattern = "BUTTON", replacement = "m" },
 }
 
+local MOUSE_WHEEL_SHORTENINGS = {
+    MOUSEWHEELUP = { ascii = "mwu", unicode = "m↑" },
+    MOUSEWHEELDOWN = { ascii = "mwd", unicode = "m↓" },
+}
+
 local MACRO_MODIFIERS = {
     shift = "SHIFT-",
     ctrl = "CTRL-",
@@ -51,12 +64,29 @@ local updatePending = false
 local cliqueIsHooked = false
 local bindPadIsHooked = false
 local bindPadIsReady = false
+local settingsAreRegistered = false
+
+local function GetSharedMedia()
+    if not LibStub then return end
+    return LibStub("LibSharedMedia-3.0", true)
+end
+
+local function GetSelectedFontPath()
+    local sharedMedia = GetSharedMedia()
+    if not sharedMedia then return DEFAULT_FONT_PATH end
+    return sharedMedia:Fetch("font", config.font, true) or DEFAULT_FONT_PATH
+end
 
 local function IsSecret(value)
     return issecretvalue and issecretvalue(value)
 end
 
 local function ShortenKey(key)
+    for bindingName, shortening in pairs(MOUSE_WHEEL_SHORTENINGS) do
+        local replacement = config.useUnicodeArrows
+            and shortening.unicode or shortening.ascii
+        key = key:gsub(bindingName, replacement)
+    end
     for _, shortening in ipairs(KEY_SHORTENINGS) do
         key = key:gsub(shortening.pattern, shortening.replacement)
     end
@@ -434,7 +464,7 @@ local function GetKeybindText(itemFrame)
     if text then return text end
 
     text = itemFrame:CreateFontString(nil, "OVERLAY")
-    text:SetFont(FONT_PATH, FONT_SIZE, "OUTLINE")
+    text:SetFont(GetSelectedFontPath(), FONT_SIZE, "OUTLINE")
     text:SetPoint("TOPLEFT", itemFrame, "TOPLEFT", 4, -3)
     text:SetTextColor(1, 1, 1)
     keybindTextByItem[itemFrame] = text
@@ -482,6 +512,57 @@ local function InvalidateAndUpdate()
 
     cacheIsDirty = true
     UpdateAllViewers()
+end
+
+local function ApplySelectedFont()
+    local fontPath = GetSelectedFontPath()
+    for _, text in pairs(keybindTextByItem) do
+        text:SetFont(fontPath, FONT_SIZE, "OUTLINE")
+    end
+end
+
+local function GetFontOptions()
+    local container = Settings.CreateControlTextContainer()
+    local sharedMedia = GetSharedMedia()
+    local fontNames = sharedMedia and sharedMedia:List("font")
+        or { DEFAULT_FONT_NAME }
+    for _, fontName in ipairs(fontNames) do
+        container:Add(fontName, fontName)
+    end
+    return container:GetData()
+end
+
+local function RegisterFontSetting(category)
+    local setting = Settings.RegisterProxySetting(category, FONT_SETTING_ID,
+        Settings.VarType.String, "Font", DEFAULT_FONT_NAME,
+        function() return config.font end,
+        function(fontName)
+            config.font = fontName
+            ApplySelectedFont()
+        end)
+    Settings.CreateDropdown(category, setting, GetFontOptions,
+        "Font registered with LibSharedMedia-3.0.")
+end
+
+local function RegisterUnicodeSetting(category)
+    local setting = Settings.RegisterProxySetting(category, UNICODE_SETTING_ID,
+        Settings.VarType.Boolean, "Use Unicode mouse-wheel arrows", false,
+        function() return config.useUnicodeArrows end,
+        function(enabled)
+            config.useUnicodeArrows = enabled
+            InvalidateAndUpdate()
+        end)
+    Settings.CreateCheckbox(category, setting,
+        "Show mouse wheel bindings as m↑ and m↓ instead of mwu and mwd.")
+end
+
+local function InitialiseSettings()
+    if settingsAreRegistered or not Settings then return end
+    local category = Settings.RegisterVerticalLayoutCategory(addonName)
+    RegisterFontSetting(category)
+    RegisterUnicodeSetting(category)
+    Settings.RegisterAddOnCategory(category)
+    settingsAreRegistered = true
 end
 
 local function HookClique()
@@ -560,11 +641,13 @@ eventFrame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
 eventFrame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
 eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-eventFrame:SetScript("OnEvent", function(_, event)
+eventFrame:SetScript("OnEvent", function(_, event, loadedAddonName)
     if event == "PLAYER_ENTERING_WORLD" then
         InitialiseViewers()
     elseif event == "ADDON_LOADED" then
         HookBindingAddons()
+        ApplySelectedFont()
+        if loadedAddonName == addonName then InitialiseSettings() end
     elseif event == "PLAYER_REGEN_ENABLED" then
         HandleCombatEnded()
     else

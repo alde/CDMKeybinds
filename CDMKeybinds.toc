@@ -4,5 +4,11 @@
 ## Notes: Shows action bar keybinds on Blizzard's Cooldown Manager
 ## Author: Rickard Dybeck
 ## Category: Combat
+## SavedVariables: CDMKeybindsDB
+
+## Libraries
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibSharedMedia-3.0\lib.xml
 
 CDMKeybinds.lua
