@@ -30,6 +30,8 @@ local KEY_SHORTENINGS = {
     { pattern = "ALT%-", replacement = "a-" },
     { pattern = "META%-", replacement = "m-" },
     { pattern = "NUMPAD", replacement = "n" },
+    { pattern = "MOUSEWHEELUP", replacement = "mwu" },
+    { pattern = "MOUSEWHEELDOWN", replacement = "mwd" },
     { pattern = "BUTTON", replacement = "m" },
 }
 

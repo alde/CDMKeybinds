@@ -156,9 +156,11 @@ assert(type(cliqueHandler) == "function", "expected Clique refresh hook")
 assert(type(bindPadHandler) == "function", "expected BindPad refresh hook")
 
 Clique.bindings = {
-    { type = "spell", spell = "Tiger Palm", key = "T" },
+    { type = "spell", spell = "Tiger Palm", key = "MOUSEWHEELUP" },
+    { type = "spell", spell = "Revival", key = "MOUSEWHEELDOWN" },
 }
 cliqueHandler()
-assert(addon.GetKeybindForSpell(100780) == "T", "expected refreshed Clique binding")
+assert(addon.GetKeybindForSpell(100780) == "mwu", "expected wheel-up shortening")
+assert(addon.GetKeybindForSpell(115310) == "mwd", "expected wheel-down shortening")
 
 print("keybinding tests: pass")
