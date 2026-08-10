@@ -118,6 +118,7 @@ Clique = {
 
 local addon = {}
 assert(loadfile("CDMKeybinds.lua"))("CDMKeybinds", addon)
+assert(_G.CDMKeybinds == addon, "expected globally accessible add-on API")
 
 addon.GetKeybindings()
 assert(bindPadIteratorCalls == 0, "expected uninitialised BindPad to be skipped")

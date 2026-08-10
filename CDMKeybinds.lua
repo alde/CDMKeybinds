@@ -554,6 +554,7 @@ CDMKeybinds.GetKeybindings = GetKeybindings
 CDMKeybinds.RegisterKeybindingProvider = RegisterKeybindingProvider
 CDMKeybinds.DebugKeybindings = DebugKeybindings
 CDMKeybinds.name = addonName
+_G.CDMKeybinds = CDMKeybinds
 
 RegisterSlashCommand()
 HookBindingAddons()
